@@ -1,44 +1,70 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive_io.dart' as archive_io;
 import 'package:args/args.dart';
 
 const String lineNumber = 'line-number';
 
 void main(final List<String> arguments) {
   exitCode = 0; // Presume success
-  final ArgParser parser = ArgParser()
-    ..addFlag(lineNumber, negatable: false, abbr: 'n');
 
+  final ArgParser parser = ArgParser();
   final ArgResults argResults = parser.parse(arguments);
   final List<String> paths = argResults.rest;
 
-  dcat(paths, showLineNumbers: argResults[lineNumber] as bool);
+  extractIpaMetadata(paths);
 }
 
-Future<void> dcat(
-  final List<String> paths, {
-  final bool showLineNumbers = false,
-}) async {
-  if (paths.isEmpty) {
-    // No files provided as arguments. Read from stdin and print each line.
-    await stdin.pipe(stdout);
+Future<void> extractIpaMetadata(final List<String> argsPaths) async {
+  if (argsPaths.isEmpty) {
+    // No files provided as arguments
+    stderr.writeln('error: no files provided as arguments');
   } else {
-    for (final String path in paths) {
-      int lineNumber = 1;
-      final Stream<String> lines = utf8.decoder
-          .bind(File(path).openRead())
-          .transform(const LineSplitter());
+    for (final String argsPath in argsPaths) {
+      final bool isIpa = argsPath.toLowerCase().endsWith('ipa');
+      if (!isIpa && !argsPath.toLowerCase().endsWith('zip')) {
+        stderr.writeln('error: unsupported file type $argsPath');
+        continue;
+      }
+
+      final String archivePath;
+      if (isIpa) {
+        archivePath = '$argsPath.zip';
+      } else {
+        archivePath = argsPath;
+      }
+
+      const String extractionPath = 'out';
       try {
-        await for (final String line in lines) {
-          if (showLineNumbers) {
-            stdout.write('${lineNumber++} ');
+        final File binary = File(argsPath);
+        if (binary.existsSync()) {
+          // Append .zip to ipa file
+          if (isIpa) {
+            binary.copySync(archivePath);
           }
-          stdout.writeln(line);
+
+          await archive_io.extractFileToDisk(archivePath, extractionPath);
+        } else {
+          stderr.writeln('error: file $argsPath does not exist');
+          continue;
         }
         // ignore: avoid_catches_without_on_clauses, TODO(vanyasem): Handle exception
-      } catch (_) {
-        await _handleError(path);
+      } catch (e) {
+        await _handleError(argsPath);
+      } finally {
+        // Delete temporary ipa.zip file
+        if (isIpa) {
+          final File archive = File(archivePath);
+          if (archive.existsSync()) {
+            archive.deleteSync();
+          }
+        }
+
+        // Cleanup extraction artifacts
+        final Directory extractedArchive = Directory(extractionPath);
+        if (extractedArchive.existsSync()) {
+          extractedArchive.deleteSync(recursive: true);
+        }
       }
     }
   }

@@ -6,9 +6,9 @@ version: 0.0.1
 environment:
   sdk: ^3.9.2
 
-# Add regular dependencies here.
 dependencies:
   args: ^2.7.0
+  archive: ^4.0.7
 
 dev_dependencies:
   fl_common_lint: ^1.8.0
