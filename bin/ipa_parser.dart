@@ -19,12 +19,12 @@ ArgParser buildParser() {
     ..addFlag('version', negatable: false, help: 'Print the tool version.');
 }
 
-void printUsage(ArgParser argParser) {
+void printUsage(final ArgParser argParser) {
   print('Usage: dart ipa_parser.dart <flags> [arguments]');
   print(argParser.usage);
 }
 
-void main(List<String> arguments) {
+void main(final List<String> arguments) {
   final ArgParser argParser = buildParser();
   try {
     final ArgResults results = argParser.parse(arguments);

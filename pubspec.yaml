@@ -11,4 +11,4 @@ dependencies:
   args: ^2.7.0
 
 dev_dependencies:
-  lints: ^6.0.0
+  fl_common_lint: ^1.8.0

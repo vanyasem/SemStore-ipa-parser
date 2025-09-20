@@ -9,13 +9,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
-  lints:
+  fl_common_lint:
     dependency: "direct dev"
     description:
-      name: lints
-      sha256: a5e2b223cb7c9c8efdc663ef484fdd95bb243bff242ef5b13e26883547fce9a0
+      name: fl_common_lint
+      sha256: "795780da8888719d26d3de2ba4028b48cccbb9e104832473c6559f9c99889054"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.0"
+    version: "1.8.0"
 sdks:
   dart: ">=3.9.2 <4.0.0"
