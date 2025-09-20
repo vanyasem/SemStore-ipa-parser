@@ -1,57 +1,53 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:args/args.dart';
 
-const String version = '0.0.1';
-
-ArgParser buildParser() {
-  return ArgParser()
-    ..addFlag(
-      'help',
-      abbr: 'h',
-      negatable: false,
-      help: 'Print this usage information.',
-    )
-    ..addFlag(
-      'verbose',
-      abbr: 'v',
-      negatable: false,
-      help: 'Show additional command output.',
-    )
-    ..addFlag('version', negatable: false, help: 'Print the tool version.');
-}
-
-void printUsage(final ArgParser argParser) {
-  print('Usage: dart ipa_parser.dart <flags> [arguments]');
-  print(argParser.usage);
-}
+const String lineNumber = 'line-number';
 
 void main(final List<String> arguments) {
-  final ArgParser argParser = buildParser();
-  try {
-    final ArgResults results = argParser.parse(arguments);
-    bool verbose = false;
+  exitCode = 0; // Presume success
+  final ArgParser parser = ArgParser()
+    ..addFlag(lineNumber, negatable: false, abbr: 'n');
 
-    // Process the parsed arguments.
-    if (results.flag('help')) {
-      printUsage(argParser);
-      return;
-    }
-    if (results.flag('version')) {
-      print('ipa_parser version: $version');
-      return;
-    }
-    if (results.flag('verbose')) {
-      verbose = true;
-    }
+  final ArgResults argResults = parser.parse(arguments);
+  final List<String> paths = argResults.rest;
 
-    // Act on the arguments provided.
-    print('Positional arguments: ${results.rest}');
-    if (verbose) {
-      print('[VERBOSE] All arguments: ${results.arguments}');
+  dcat(paths, showLineNumbers: argResults[lineNumber] as bool);
+}
+
+Future<void> dcat(
+  final List<String> paths, {
+  final bool showLineNumbers = false,
+}) async {
+  if (paths.isEmpty) {
+    // No files provided as arguments. Read from stdin and print each line.
+    await stdin.pipe(stdout);
+  } else {
+    for (final String path in paths) {
+      int lineNumber = 1;
+      final Stream<String> lines = utf8.decoder
+          .bind(File(path).openRead())
+          .transform(const LineSplitter());
+      try {
+        await for (final String line in lines) {
+          if (showLineNumbers) {
+            stdout.write('${lineNumber++} ');
+          }
+          stdout.writeln(line);
+        }
+        // ignore: avoid_catches_without_on_clauses, TODO(vanyasem): Handle exception
+      } catch (_) {
+        await _handleError(path);
+      }
     }
-  } on FormatException catch (e) {
-    // Print usage information if an invalid argument was provided.
-    print(e.message);
-    print('');
-    printUsage(argParser);
+  }
+}
+
+Future<void> _handleError(final String path) async {
+  if (FileSystemEntity.isDirectorySync(path)) {
+    stderr.writeln('error: $path is a directory');
+  } else {
+    exitCode = 2;
   }
 }
