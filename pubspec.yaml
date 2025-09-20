@@ -9,6 +9,7 @@ environment:
 dependencies:
   args: ^2.7.0
   archive: ^4.0.7
+  propertylistserialization: ^1.4.1
 
 dev_dependencies:
   fl_common_lint: ^1.8.0

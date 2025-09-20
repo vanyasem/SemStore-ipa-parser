@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart' as archive_io;
 import 'package:args/args.dart';
+import 'package:propertylistserialization/propertylistserialization.dart';
 
 const String lineNumber = 'line-number';
 
@@ -44,12 +45,35 @@ Future<void> extractIpaMetadata(final List<String> argsPaths) async {
           }
 
           await archive_io.extractFileToDisk(archivePath, extractionPath);
+
+          final File itunesMetadata = File(
+            '$extractionPath/iTunesMetadata.plist',
+          );
+          if (itunesMetadata.existsSync()) {
+            final String metadata = itunesMetadata.readAsStringSync();
+            final Map<String, Object> plist =
+                PropertyListSerialization.propertyListWithString(metadata)
+                    as Map<String, Object>;
+            stdout
+              ..write('iconUrl: ')
+              ..writeln("'${plist['softwareIcon57x57URL']}',")
+              ..write('name: ')
+              ..writeln("'${plist['bundleDisplayName']}',")
+              ..write('version: ')
+              ..writeln("'${plist['bundleShortVersionString']}',")
+              ..write('bundleId: ')
+              ..writeln("'${plist['softwareVersionBundleId']}',");
+          } else {
+            stderr.writeln('error: $argsPath is not a valid IPA');
+            continue;
+          }
         } else {
           stderr.writeln('error: file $argsPath does not exist');
           continue;
         }
         // ignore: avoid_catches_without_on_clauses, TODO(vanyasem): Handle exception
       } catch (e) {
+        print(e);
         await _handleError(argsPath);
       } finally {
         // Delete temporary ipa.zip file
